@@ -88,24 +88,24 @@ public class RobotContainer {
         // Left Stick Button -> Set swerve to X
         m_driverController.leftStick().whileTrue(m_robotDrive.setXCommand());
 
-        // Left Bumper -> Run tube intake
-        m_driverController.leftBumper().whileTrue(m_coralSubSystem.runIntakeCommand());
+        // Left Bumper -> Run coral tube intake
+        m_operatorController.leftBumper().whileTrue(m_coralSubSystem.runIntakeCommand());
 
-        // Right Bumper -> Run tube intake in reverse
-        m_driverController.rightBumper().whileTrue(m_coralSubSystem.reverseIntakeCommand());
+        // Right Bumper -> Run coral tube intake in reverse
+        m_operatorController.rightBumper().whileTrue(m_coralSubSystem.reverseIntakeCommand());
 
         // B Button -> Elevator/Arm to human player position, set ball intake to stow when idle
-        m_driverController.b().onTrue(m_coralSubSystem.setSetpointCommand(Setpoint.kFeederStation)
+        m_operatorController.b().onTrue(m_coralSubSystem.setSetpointCommand(Setpoint.kFeederStation)
             .alongWith(m_algaeSubsystem.stowCommand()));
         
         // A Button -> Elevator/Arm to level 2 position
-        m_driverController.a().onTrue(m_coralSubSystem.setSetpointCommand(Setpoint.kLevel2));
+        m_operatorController.a().onTrue(m_coralSubSystem.setSetpointCommand(Setpoint.kLevel2));
 
         // X Button -> Elevator/Arm to level 3 position
-        m_driverController.x().onTrue(m_coralSubSystem.setSetpointCommand(Setpoint.kLevel3));
+        m_operatorController.x().onTrue(m_coralSubSystem.setSetpointCommand(Setpoint.kLevel3));
 
         // Y Button -> Elevator/Arm to level 4 position
-        // m_driverController.y().onTrue(m_coralSubSystem.setSetpointCommand(Setpoint.kLevel4));
+        // m_operatorController.y().onTrue(m_coralSubSystem.setSetpointCommand(Setpoint.kLevel4));
 
         // Right Trigger -> Run ball intake, set to leave out when idle
         m_driverController.rightTrigger(OIConstants.kTriggerButtonThreshold)
@@ -146,7 +146,7 @@ public class RobotContainer {
         
         Command autoCommand1 = leaveAutoCommand(config, thetaController);
         Command autoCommand2 = middleAutoCommand(config, thetaController);
-        Command autoCommand3 = rightAutoCommand(config, thetaController);
+        Command autoCommand3 = rightAutoCommand(config, thetaController, false);
         Command autoCommand4 = leftAutoCommand(config, thetaController);
         
         // Send selected auto command to Robot.java
@@ -174,7 +174,7 @@ public class RobotContainer {
      * 
      *  1. Leave Auto Routine (3 (Leave) = 3 pts)
      *  2. Middle Auto Routine (6 (Coral) + 3 (Leave) = 9 pts)
-     *  3. Right Auto Routine (6 (Coral) + 3 (Leave) = 9 pts)
+     *  3. Right Auto Routine (12 (2 Coral) + 3 (Leave) = 15 pts)
      *  4. Left Auto Routine (6 (Coral) + 3 (Leave) = 9 pts)
      * 
      *  =========================================================
@@ -218,7 +218,7 @@ public class RobotContainer {
             // Interior Waypoint
             List.of(new Translation2d(1, 0)),
             // End 2.15 meters straight ahead of where we started, facing forward
-            new Pose2d(2.15, 0, new Rotation2d(Math.PI)),
+            new Pose2d(2.15, 0, new Rotation2d(0)),
             config);
 
         SwerveControllerCommand forwardCommand = new SwerveControllerCommand(
@@ -270,7 +270,7 @@ public class RobotContainer {
     }
 
     // Auto Routine for right side of field
-    public Command rightAutoCommand(TrajectoryConfig config, ProfiledPIDController thetaController) {
+    public Command rightAutoCommand(TrajectoryConfig config, ProfiledPIDController thetaController, boolean humanPlayer) {
         
         // Go to correct position on reef to score coral
         Trajectory reefTrajectory = TrajectoryGenerator.generateTrajectory(
@@ -278,8 +278,8 @@ public class RobotContainer {
             List.of(new Pose2d(0, 0, new Rotation2d(0)), 
             // Move forward 137.25" and left 21.625"
             new Pose2d(Units.inchesToMeters(137.25), Units.inchesToMeters(21.625), new Rotation2d(0)),
-            // Move left 100" and turn 135 degrees CCW (3PI/4 radians)
-            new Pose2d(Units.inchesToMeters(137.25), Units.inchesToMeters(121.625), new Rotation2d(3 * Math.PI / 4))),
+            // Move left 100" and turn 150 degrees CCW (5PI/6 radians)
+            new Pose2d(Units.inchesToMeters(137.25), Units.inchesToMeters(121.625), new Rotation2d(5 * Math.PI / 6))),
             config);
         
         SwerveControllerCommand moveToReefCommand = new SwerveControllerCommand(
@@ -325,9 +325,93 @@ public class RobotContainer {
         // Reset odometry to the starting pose of the trajectory.
         m_robotDrive.resetOdometry(new Pose2d(0, 0, new Rotation2d(0)));
 
-        // Go to reef -> Lift algae out of reef -> Shimmy to the right to be in line with branch -> Score coral -> Stop
-        return moveToReefCommand.andThen(liftAlgaeCommand.andThen(shimmyRightCommand.andThen(scoreCoralCommand.andThen(
+        if(!humanPlayer)
+            // Go to reef -> Lift algae out of reef -> Shimmy to the right to be in line with branch -> Score coral -> Stop
+            return moveToReefCommand.andThen(liftAlgaeCommand.andThen(shimmyRightCommand.andThen(scoreCoralCommand.andThen(
             () -> m_robotDrive.drive(0, 0, 0, false)))));
+        
+
+        /*
+         * 
+         *          HUMAN PLAYER CODE
+         * 
+         */
+        // Lower elevator to feeder station level command
+        Command lowerElevatorCommand = m_coralSubSystem.setSetpointCommand(Setpoint.kFeederStation);
+
+        // Go to coral station command
+        Trajectory coralStationTrajectory = TrajectoryGenerator.generateTrajectory(
+            // Start at the position of the reef
+            new Pose2d(Units.inchesToMeters(137.25), Units.inchesToMeters(121.625), new Rotation2d(5 * Math.PI / 6)),
+            // Interior Waypoint
+            List.of(new Translation2d(Units.inchesToMeters(250), Units.inchesToMeters(23))),
+            // End 250" forward and 23" left of where we started, facing 135 degrees CCW
+            new Pose2d(Units.inchesToMeters(250), Units.inchesToMeters(23), new Rotation2d(3 * Math.PI / 4)),
+            config);
+        
+        SwerveControllerCommand coralStationCommand = new SwerveControllerCommand(
+            coralStationTrajectory,
+            m_robotDrive::getPose, // Functional interface to feed supplier
+            DriveConstants.kDriveKinematics,
+        
+            // Position controllers
+            new PIDController(AutoConstants.kPXController, 0, 0),
+            new PIDController(AutoConstants.kPYController, 0, 0),
+            thetaController,
+            m_robotDrive::setModuleStates,
+            m_robotDrive);
+            
+        // Go back to reef trajectory
+        Trajectory reefTrajectory2 = TrajectoryGenerator.generateTrajectory(
+            // Start at the position of the coral station
+            new Pose2d(Units.inchesToMeters(250), Units.inchesToMeters(23), new Rotation2d(3 * Math.PI / 4)),
+            // Interior Waypoint
+            List.of(new Translation2d(Units.inchesToMeters(250), Units.inchesToMeters(23))),
+            // End 137.5" forward and 121.625" left of where we started, facing 150 degrees CCW (at middle of reef)
+            new Pose2d(Units.inchesToMeters(137.25), Units.inchesToMeters(121.625), new Rotation2d(5 * Math.PI / 6)),
+            config);
+            
+        SwerveControllerCommand reefCommand2 = new SwerveControllerCommand(
+            reefTrajectory2,
+            m_robotDrive::getPose, // Functional interface to feed supplier
+            DriveConstants.kDriveKinematics,
+            
+            // Position controllers
+            new PIDController(AutoConstants.kPXController, 0, 0),
+            new PIDController(AutoConstants.kPYController, 0, 0),
+            thetaController,
+            m_robotDrive::setModuleStates,
+            m_robotDrive);
+        
+        // Shimmy lefgt command
+        Trajectory shimmyLeftTrajectory = TrajectoryGenerator.generateTrajectory(
+            // Start at the origin facing the +X direction
+            new Pose2d(0, 0, new Rotation2d(0)),
+            // Interior Waypoint
+            List.of(new Translation2d(0, -0.1)),
+            // End 0.17 meters right of where we started, facing forward
+            new Pose2d(0, 0.17, new Rotation2d(0)),
+            config);
+
+        SwerveControllerCommand shimmyLeftCommand = new SwerveControllerCommand(
+            shimmyLeftTrajectory,
+            m_robotDrive::getPose, // Functional interface to feed supplier
+            DriveConstants.kDriveKinematics,
+
+            // Position controllers
+            new PIDController(AutoConstants.kPXController, 0, 0),
+            new PIDController(AutoConstants.kPYController, 0, 0),
+            thetaController,
+            m_robotDrive::setModuleStates,
+            m_robotDrive);
+        
+
+        // Go to reef -> Lift algae out of reef -> Shimmy to the right to be in line with branch -> Score coral -> Lower elevatorto feeder level
+        // -> Go to coral station -> Wait 3 second -> Return to middle of reeef -> Lift elevator to L3 -> Shimmy left -> Score coral -> Stop
+        return moveToReefCommand.andThen(liftAlgaeCommand.andThen(shimmyRightCommand.andThen(scoreCoralCommand.andThen(lowerElevatorCommand.andThen(
+            coralStationCommand.withTimeout(3).andThen(reefCommand2.andThen(liftAlgaeCommand).andThen(shimmyLeftCommand
+            .andThen(scoreCoralCommand.andThen(() -> m_robotDrive.drive(0, 0, 0, false))))))))));
+
     }
 
     // Auto Routine for left side of field
@@ -339,8 +423,8 @@ public class RobotContainer {
             List.of(new Pose2d(0, 0, new Rotation2d(0)), 
             // Move forward 137.25" and right 21.625"
             new Pose2d(Units.inchesToMeters(137.25), -Units.inchesToMeters(21.625), new Rotation2d(0)),
-            // Move right 100" and turn 135 degrees CW (-3PI/4 radians)
-            new Pose2d(Units.inchesToMeters(137.25), -Units.inchesToMeters(121.625), new Rotation2d(-3 * Math.PI / 4))),
+            // Move right 100" and turn 150 degrees CW (-5PI/6 radians)
+            new Pose2d(Units.inchesToMeters(137.25), -Units.inchesToMeters(121.625), new Rotation2d(-5 * Math.PI / 6))),
             config);
             
         SwerveControllerCommand moveToReefCommand = new SwerveControllerCommand(
