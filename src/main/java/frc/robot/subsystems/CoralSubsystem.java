@@ -193,6 +193,15 @@ public class CoralSubsystem extends SubsystemBase {
     intakeMotor.set(power);
   }
 
+  // Added methods
+  private void setElevatorPower(double power) {
+    armMotor.set(power);
+  }
+
+  private void setArmPower(double power) {
+    armMotor.set(power);
+  }
+
   /**
    * Command to set the subsystem setpoint. This will set the arm and elevator to their predefined
    * positions for the given setpoint.
@@ -241,6 +250,42 @@ public class CoralSubsystem extends SubsystemBase {
   public Command reverseIntakeCommand() {
     return this.startEnd(
         () -> this.setIntakePower(IntakeSetpoints.kReverse), () -> this.setIntakePower(0.0));
+  }
+
+  /**
+   * Command to run the elevator motor. When the command is interrupted, e.g. the button is released,
+   * the motor will stop.
+   */
+  public Command runElevatorCommand() {
+    return this.startEnd(
+        () -> this.setElevatorPower(ElevatorSetpoints.kForward), () -> this.setElevatorPower(0.0));
+  }
+
+  /**
+   * Command to reverses the elevator motor. When the command is interrupted, e.g. the button is
+   * released, the motor will stop.
+   */
+  public Command reverseElevatorCommand() {
+    return this.startEnd(
+        () -> this.setElevatorPower(ElevatorSetpoints.kReverse), () -> this.setElevatorPower(0.0));
+  }
+
+    /**
+   * Command to run the arm motor. When the command is interrupted, e.g. the button is released,
+   * the motor will stop.
+   */
+  public Command runArmCommand() {
+    return this.startEnd(
+        () -> this.setArmPower(ArmSetpoints.kForward), () -> this.setArmPower(0.0));
+  }
+
+  /**
+   * Command to reverses the arm motor. When the command is interrupted, e.g. the button is
+   * released, the motor will stop.
+   */
+  public Command reverseArmCommand() {
+    return this.startEnd(
+        () -> this.setArmPower(ArmSetpoints.kReverse), () -> this.setArmPower(0.0));
   }
 
   @Override

@@ -39,7 +39,7 @@ import java.util.Optional;
  * (including subsystems, commands, and button mappings) should be declared here.
  */
 public class RobotContainer {
-  // The robot's subsystems
+    // The robot's subsystems
     private final DriveSubsystem m_robotDrive = new DriveSubsystem();
     private final CoralSubsystem m_coralSubSystem = new CoralSubsystem();
     private final AlgaeSubsystem m_algaeSubsystem = new AlgaeSubsystem();
@@ -94,6 +94,19 @@ public class RobotContainer {
         // Right Bumper -> Run coral tube intake in reverse
         m_operatorController.rightBumper().whileTrue(m_coralSubSystem.reverseIntakeCommand());
 
+        /*
+         *  Elevator & Arm manual run commands
+         */
+        // Left Trigger -> Raise Elevator
+        m_operatorController.leftTrigger(OIConstants.kTriggerButtonThreshold).whileTrue(m_coralSubSystem.runElevatorCommand());
+        // Right Trigger -> Lower Elevator
+        m_operatorController.rightTrigger(OIConstants.kTriggerButtonThreshold).whileTrue(m_coralSubSystem.reverseElevatorCommand());
+        // Left Bumper -> Rotate arm forward
+        m_operatorController.leftBumper().whileTrue(m_coralSubSystem.runArmCommand());
+        // Right Bumper -> Rotate arm backward
+        m_operatorController.rightBumper().whileTrue(m_coralSubSystem.reverseArmCommand());
+
+
         // B Button -> Elevator/Arm to human player position, set ball intake to stow when idle
         m_operatorController.b().onTrue(m_coralSubSystem.setSetpointCommand(Setpoint.kFeederStation)
             .alongWith(m_algaeSubsystem.stowCommand()));
@@ -143,7 +156,7 @@ public class RobotContainer {
             AutoConstants.kPThetaController, 0, 0, AutoConstants.kThetaControllerConstraints);
             thetaController.enableContinuousInput(-Math.PI, Math.PI);
 
-        
+        //
         Command autoCommand1 = leaveAutoCommand(config, thetaController);
         Command autoCommand2 = middleAutoCommand(config, thetaController);
         Command autoCommand3 = rightAutoCommand(config, thetaController, false);

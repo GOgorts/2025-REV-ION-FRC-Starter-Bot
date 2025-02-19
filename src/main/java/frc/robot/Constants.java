@@ -30,6 +30,8 @@ public final class Constants {
       public static final int kLevel2 = 0;
       public static final int kLevel3 = 100;
       public static final int kLevel4 = 150;
+      public static final double kForward = 0.5;
+      public static final double kReverse = -0.5;
     }
 
     public static final class ArmSetpoints {
@@ -38,6 +40,8 @@ public final class Constants {
       public static final double kLevel2 = 2;
       public static final double kLevel3 = 2;
       public static final double kLevel4 = 19;
+      public static final double kForward = 0.2;
+      public static final double kReverse = -0.2;
     }
 
     public static final class IntakeSetpoints {
