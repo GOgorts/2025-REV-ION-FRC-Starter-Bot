@@ -203,7 +203,7 @@ public class RobotContainer {
      * 
      *  1. Leave Auto Routine (3 (Leave) = 3 pts)
      *  2. Middle Auto Routine (6 (Coral) + 3 (Leave) = 9 pts)
-     *  3. Right Auto Routine (12 (2 Coral) + 3 (Leave) = 15 pts)
+     *  3. Right Auto Routine (6 (Coral) + 3 (Leave) = 9 pts)
      *  4. Left Auto Routine (6 (Coral) + 3 (Leave) = 9 pts)
      * 
      *  =========================================================
@@ -354,92 +354,91 @@ public class RobotContainer {
         // Reset odometry to the starting pose of the trajectory.
         m_robotDrive.resetOdometry(new Pose2d(0, 0, new Rotation2d(0)));
 
-        if(!humanPlayer)
-            // Go to reef -> Lift algae out of reef -> Shimmy to the right to be in line with branch -> Score coral -> Stop
-            return moveToReefCommand.andThen(liftAlgaeCommand.andThen(shimmyRightCommand.andThen(scoreCoralCommand.andThen(
+        // Go to reef -> Lift algae out of reef -> Shimmy to the right to be in line with branch -> Score coral -> Stop
+        return moveToReefCommand.andThen(liftAlgaeCommand.andThen(shimmyRightCommand.andThen(scoreCoralCommand.andThen(
             () -> m_robotDrive.drive(0, 0, 0, false)))));
         
 
-        /*
-         * 
-         *          HUMAN PLAYER CODE
-         * 
-         */
-        // Lower elevator to feeder station level command
-        Command lowerElevatorCommand = m_coralSubSystem.setSetpointCommand(Setpoint.kFeederStation);
+        // /*
+        //  * 
+        //  *          HUMAN PLAYER CODE
+        //  * 
+        //  */
+        // // Lower elevator to feeder station level command
+        // Command lowerElevatorCommand = m_coralSubSystem.setSetpointCommand(Setpoint.kFeederStation);
 
-        // Go to coral station command
-        Trajectory coralStationTrajectory = TrajectoryGenerator.generateTrajectory(
-            // Start at the position of the reef
-            new Pose2d(Units.inchesToMeters(137.25), Units.inchesToMeters(121.625), new Rotation2d(5 * Math.PI / 6)),
-            // Interior Waypoint
-            List.of(new Translation2d(Units.inchesToMeters(250), Units.inchesToMeters(23))),
-            // End 250" forward and 23" left of where we started, facing 135 degrees CCW
-            new Pose2d(Units.inchesToMeters(250), Units.inchesToMeters(23), new Rotation2d(3 * Math.PI / 4)),
-            config);
+        // // Go to coral station command
+        // Trajectory coralStationTrajectory = TrajectoryGenerator.generateTrajectory(
+        //     // Start at the position of the reef
+        //     new Pose2d(Units.inchesToMeters(137.25), Units.inchesToMeters(121.625), new Rotation2d(5 * Math.PI / 6)),
+        //     // Interior Waypoint
+        //     List.of(new Translation2d(Units.inchesToMeters(250), Units.inchesToMeters(23))),
+        //     // End 250" forward and 23" left of where we started, facing 135 degrees CCW
+        //     new Pose2d(Units.inchesToMeters(250), Units.inchesToMeters(23), new Rotation2d(3 * Math.PI / 4)),
+        //     config);
         
-        SwerveControllerCommand coralStationCommand = new SwerveControllerCommand(
-            coralStationTrajectory,
-            m_robotDrive::getPose, // Functional interface to feed supplier
-            DriveConstants.kDriveKinematics,
+        // SwerveControllerCommand coralStationCommand = new SwerveControllerCommand(
+        //     coralStationTrajectory,
+        //     m_robotDrive::getPose, // Functional interface to feed supplier
+        //     DriveConstants.kDriveKinematics,
         
-            // Position controllers
-            new PIDController(AutoConstants.kPXController, 0, 0),
-            new PIDController(AutoConstants.kPYController, 0, 0),
-            thetaController,
-            m_robotDrive::setModuleStates,
-            m_robotDrive);
+        //     // Position controllers
+        //     new PIDController(AutoConstants.kPXController, 0, 0),
+        //     new PIDController(AutoConstants.kPYController, 0, 0),
+        //     thetaController,
+        //     m_robotDrive::setModuleStates,
+        //     m_robotDrive);
             
-        // Go back to reef trajectory
-        Trajectory reefTrajectory2 = TrajectoryGenerator.generateTrajectory(
-            // Start at the position of the coral station
-            new Pose2d(Units.inchesToMeters(250), Units.inchesToMeters(23), new Rotation2d(3 * Math.PI / 4)),
-            // Interior Waypoint
-            List.of(new Translation2d(Units.inchesToMeters(250), Units.inchesToMeters(23))),
-            // End 137.5" forward and 121.625" left of where we started, facing 150 degrees CCW (at middle of reef)
-            new Pose2d(Units.inchesToMeters(137.25), Units.inchesToMeters(121.625), new Rotation2d(5 * Math.PI / 6)),
-            config);
+        // // Go back to reef trajectory
+        // Trajectory reefTrajectory2 = TrajectoryGenerator.generateTrajectory(
+        //     // Start at the position of the coral station
+        //     new Pose2d(Units.inchesToMeters(250), Units.inchesToMeters(23), new Rotation2d(3 * Math.PI / 4)),
+        //     // Interior Waypoint
+        //     List.of(new Translation2d(Units.inchesToMeters(250), Units.inchesToMeters(23))),
+        //     // End 137.5" forward and 121.625" left of where we started, facing 150 degrees CCW (at middle of reef)
+        //     new Pose2d(Units.inchesToMeters(137.25), Units.inchesToMeters(121.625), new Rotation2d(5 * Math.PI / 6)),
+        //     config);
             
-        SwerveControllerCommand reefCommand2 = new SwerveControllerCommand(
-            reefTrajectory2,
-            m_robotDrive::getPose, // Functional interface to feed supplier
-            DriveConstants.kDriveKinematics,
+        // SwerveControllerCommand reefCommand2 = new SwerveControllerCommand(
+        //     reefTrajectory2,
+        //     m_robotDrive::getPose, // Functional interface to feed supplier
+        //     DriveConstants.kDriveKinematics,
             
-            // Position controllers
-            new PIDController(AutoConstants.kPXController, 0, 0),
-            new PIDController(AutoConstants.kPYController, 0, 0),
-            thetaController,
-            m_robotDrive::setModuleStates,
-            m_robotDrive);
+        //     // Position controllers
+        //     new PIDController(AutoConstants.kPXController, 0, 0),
+        //     new PIDController(AutoConstants.kPYController, 0, 0),
+        //     thetaController,
+        //     m_robotDrive::setModuleStates,
+        //     m_robotDrive);
         
-        // Shimmy lefgt command
-        Trajectory shimmyLeftTrajectory = TrajectoryGenerator.generateTrajectory(
-            // Start at the origin facing the +X direction
-            new Pose2d(0, 0, new Rotation2d(0)),
-            // Interior Waypoint
-            List.of(new Translation2d(0, -0.1)),
-            // End 0.17 meters right of where we started, facing forward
-            new Pose2d(0, 0.17, new Rotation2d(0)),
-            config);
+        // // Shimmy lefgt command
+        // Trajectory shimmyLeftTrajectory = TrajectoryGenerator.generateTrajectory(
+        //     // Start at the origin facing the +X direction
+        //     new Pose2d(0, 0, new Rotation2d(0)),
+        //     // Interior Waypoint
+        //     List.of(new Translation2d(0, -0.1)),
+        //     // End 0.17 meters right of where we started, facing forward
+        //     new Pose2d(0, 0.17, new Rotation2d(0)),
+        //     config);
 
-        SwerveControllerCommand shimmyLeftCommand = new SwerveControllerCommand(
-            shimmyLeftTrajectory,
-            m_robotDrive::getPose, // Functional interface to feed supplier
-            DriveConstants.kDriveKinematics,
+        // SwerveControllerCommand shimmyLeftCommand = new SwerveControllerCommand(
+        //     shimmyLeftTrajectory,
+        //     m_robotDrive::getPose, // Functional interface to feed supplier
+        //     DriveConstants.kDriveKinematics,
 
-            // Position controllers
-            new PIDController(AutoConstants.kPXController, 0, 0),
-            new PIDController(AutoConstants.kPYController, 0, 0),
-            thetaController,
-            m_robotDrive::setModuleStates,
-            m_robotDrive);
+        //     // Position controllers
+        //     new PIDController(AutoConstants.kPXController, 0, 0),
+        //     new PIDController(AutoConstants.kPYController, 0, 0),
+        //     thetaController,
+        //     m_robotDrive::setModuleStates,
+        //     m_robotDrive);
         
 
-        // Go to reef -> Lift algae out of reef -> Shimmy to the right to be in line with branch -> Score coral -> Lower elevatorto feeder level
-        // -> Go to coral station -> Wait 3 second -> Return to middle of reeef -> Lift elevator to L3 -> Shimmy left -> Score coral -> Stop
-        return moveToReefCommand.andThen(liftAlgaeCommand.andThen(shimmyRightCommand.andThen(scoreCoralCommand.andThen(lowerElevatorCommand.andThen(
-            coralStationCommand.withTimeout(3).andThen(reefCommand2.andThen(liftAlgaeCommand).andThen(shimmyLeftCommand
-            .andThen(scoreCoralCommand.andThen(() -> m_robotDrive.drive(0, 0, 0, false))))))))));
+        // // Go to reef -> Lift algae out of reef -> Shimmy to the right to be in line with branch -> Score coral -> Lower elevatorto feeder level
+        // // -> Go to coral station -> Wait 3 second -> Return to middle of reeef -> Lift elevator to L3 -> Shimmy left -> Score coral -> Stop
+        // return moveToReefCommand.andThen(liftAlgaeCommand.andThen(shimmyRightCommand.andThen(scoreCoralCommand.andThen(lowerElevatorCommand.andThen(
+        //     coralStationCommand.withTimeout(3).andThen(reefCommand2.andThen(liftAlgaeCommand).andThen(shimmyLeftCommand
+        //     .andThen(scoreCoralCommand.andThen(() -> m_robotDrive.drive(0, 0, 0, false))))))))));
 
     }
 
