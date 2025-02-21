@@ -16,6 +16,8 @@ import edu.wpi.first.math.trajectory.TrajectoryGenerator;
 import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.XboxController;
+import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.RunCommand;
@@ -29,6 +31,7 @@ import frc.robot.subsystems.AlgaeSubsystem;
 import frc.robot.subsystems.CoralSubsystem;
 import frc.robot.subsystems.CoralSubsystem.Setpoint;
 import frc.robot.subsystems.DriveSubsystem;
+import frc.robot.subsystems.HangSubsystem;
 import java.util.List;
 import java.util.Optional;
 
@@ -43,12 +46,16 @@ public class RobotContainer {
     private final DriveSubsystem m_robotDrive = new DriveSubsystem();
     private final CoralSubsystem m_coralSubSystem = new CoralSubsystem();
     private final AlgaeSubsystem m_algaeSubsystem = new AlgaeSubsystem();
+    private final HangSubsystem m_hangSubsystem = new HangSubsystem();
 
     // The driver's controller
     CommandXboxController m_driverController = new CommandXboxController(OIConstants.kDriverControllerPort);
     CommandXboxController m_operatorController = new CommandXboxController(OIConstants.kOperatorControllerPort);
 
     Optional<Alliance> alliance = DriverStation.getAlliance();
+
+    // A chooser for autonomous commands
+    SendableChooser<Command> m_chooser = new SendableChooser<>();
 
   /** The container for the robot. Contains subsystems, OI devices, and commands. */
     public RobotContainer() {
@@ -69,6 +76,30 @@ public class RobotContainer {
 
         // Set the ball intake to in/out when not running based on internal state
         m_algaeSubsystem.setDefaultCommand(m_algaeSubsystem.idleCommand());
+
+        // Set the hang arm to hold when not running
+        m_hangSubsystem.setDefaultCommand(m_hangSubsystem.idleCommand());
+        
+        // Create config for trajectory
+        TrajectoryConfig config = new TrajectoryConfig(
+            AutoConstants.kMaxSpeedMetersPerSecond,
+            AutoConstants.kMaxAccelerationMetersPerSecondSquared)
+            // Add kinematics to ensure max speed is actually obeyed
+            .setKinematics(DriveConstants.kDriveKinematics);
+
+        // Create ProfiledPIDController for theta controller
+        var thetaController = new ProfiledPIDController(
+            AutoConstants.kPThetaController, 0, 0, AutoConstants.kThetaControllerConstraints);
+            thetaController.enableContinuousInput(-Math.PI, Math.PI);
+
+        // Add commands to the autonomous command chooser
+        m_chooser.setDefaultOption("Leave Auto", leaveAutoCommand(config, thetaController));
+        m_chooser.addOption("Middle Auto", middleAutoCommand(config, thetaController));
+        m_chooser.addOption("Right Auto (No human player)", rightAutoCommand(config, thetaController, false));
+        m_chooser.addOption("Left Auto", leftAutoCommand(config, thetaController));
+        
+        // Put the chooser on the dashboard
+        SmartDashboard.putData(m_chooser);
     }
 
     /* 
@@ -85,51 +116,54 @@ public class RobotContainer {
     * {@link JoystickButton}.
     */
     private void configureButtonBindings() {
+        
         // Left Stick Button -> Set swerve to X
         m_driverController.leftStick().whileTrue(m_robotDrive.setXCommand());
-
-        // Left Bumper -> Run coral tube intake
-        m_operatorController.leftBumper().whileTrue(m_coralSubSystem.runIntakeCommand());
-
-        // Right Bumper -> Run coral tube intake in reverse
-        m_operatorController.rightBumper().whileTrue(m_coralSubSystem.reverseIntakeCommand());
-
-        /*
-         *  Elevator & Arm manual run commands
-         */
-        // Left Trigger -> Raise Elevator
-        m_operatorController.leftTrigger(OIConstants.kTriggerButtonThreshold).whileTrue(m_coralSubSystem.runElevatorCommand());
-        // Right Trigger -> Lower Elevator
-        m_operatorController.rightTrigger(OIConstants.kTriggerButtonThreshold).whileTrue(m_coralSubSystem.reverseElevatorCommand());
-        // Left Bumper -> Rotate arm forward
-        m_operatorController.leftBumper().whileTrue(m_coralSubSystem.runArmCommand());
-        // Right Bumper -> Rotate arm backward
-        m_operatorController.rightBumper().whileTrue(m_coralSubSystem.reverseArmCommand());
-
-
-        // B Button -> Elevator/Arm to human player position, set ball intake to stow when idle
-        m_operatorController.b().onTrue(m_coralSubSystem.setSetpointCommand(Setpoint.kFeederStation)
-            .alongWith(m_algaeSubsystem.stowCommand()));
         
-        // A Button -> Elevator/Arm to level 2 position
-        m_operatorController.a().onTrue(m_coralSubSystem.setSetpointCommand(Setpoint.kLevel2));
-
-        // X Button -> Elevator/Arm to level 3 position
-        m_operatorController.x().onTrue(m_coralSubSystem.setSetpointCommand(Setpoint.kLevel3));
-
-        // Y Button -> Elevator/Arm to level 4 position
-        // m_operatorController.y().onTrue(m_coralSubSystem.setSetpointCommand(Setpoint.kLevel4));
+        // Start Button -> Zero swerve heading
+        m_driverController.start().onTrue(m_robotDrive.zeroHeadingCommand());
 
         // Right Trigger -> Run ball intake, set to leave out when idle
         m_driverController.rightTrigger(OIConstants.kTriggerButtonThreshold)
             .whileTrue(m_algaeSubsystem.runIntakeCommand());
-
         // Left Trigger -> Run ball intake in reverse, set to stow when idle
         m_driverController.leftTrigger(OIConstants.kTriggerButtonThreshold)
             .whileTrue(m_algaeSubsystem.reverseIntakeCommand());
 
-        // Start Button -> Zero swerve heading
-        m_driverController.start().onTrue(m_robotDrive.zeroHeadingCommand());
+        // Left Bumper -> Run hang arm, set to hold when idle
+        m_driverController.leftBumper().whileTrue(m_hangSubsystem.runHangCommand());
+        // Right Bumper -> Run hang arm in reverse, set to release when idle
+        m_driverController.rightBumper().whileTrue(m_hangSubsystem.reverseHangCommand());
+
+
+
+        // Left Bumper -> Run coral tube intake
+        m_operatorController.leftBumper().whileTrue(m_coralSubSystem.runIntakeCommand());
+        // Right Bumper -> Run coral tube intake in reverse
+        m_operatorController.rightBumper().whileTrue(m_coralSubSystem.reverseIntakeCommand());
+
+        // B Button -> Elevator/Arm to human player position, set ball intake to stow when idle
+        m_operatorController.b().onTrue(m_coralSubSystem.setSetpointCommand(Setpoint.kFeederStation)
+            .alongWith(m_algaeSubsystem.stowCommand()));
+        // A Button -> Elevator/Arm to level 2 position
+        m_operatorController.a().onTrue(m_coralSubSystem.setSetpointCommand(Setpoint.kLevel2));
+        // X Button -> Elevator/Arm to level 3 position
+        m_operatorController.x().onTrue(m_coralSubSystem.setSetpointCommand(Setpoint.kLevel3));
+        // Y Button -> Elevator/Arm to level 4 position
+        // m_operatorController.y().onTrue(m_coralSubSystem.setSetpointCommand(Setpoint.kLevel4));
+
+        /*
+         *  Elevator & Arm manual run commands
+         */
+        // // Left Trigger -> Raise Elevator
+        // m_operatorController.leftTrigger(OIConstants.kTriggerButtonThreshold).whileTrue(m_coralSubSystem.runElevatorCommand());
+        // // Right Trigger -> Lower Elevator
+        // m_operatorController.rightTrigger(OIConstants.kTriggerButtonThreshold).whileTrue(m_coralSubSystem.reverseElevatorCommand());
+        // // Left Bumper -> Rotate arm forward
+        // m_operatorController.leftBumper().whileTrue(m_coralSubSystem.runArmCommand());
+        // // Right Bumper -> Rotate arm backward
+        // m_operatorController.rightBumper().whileTrue(m_coralSubSystem.reverseArmCommand());
+
     }
 
     public double getSimulationTotalCurrentDraw() {
@@ -144,26 +178,8 @@ public class RobotContainer {
    * @return the command to run in autonomous
    */
     public Command getAutonomousCommand() {
-        // Create config for trajectory
-        TrajectoryConfig config = new TrajectoryConfig(
-            AutoConstants.kMaxSpeedMetersPerSecond,
-            AutoConstants.kMaxAccelerationMetersPerSecondSquared)
-            // Add kinematics to ensure max speed is actually obeyed
-            .setKinematics(DriveConstants.kDriveKinematics);
-
-        // Create ProfiledPIDController for theta controller
-        var thetaController = new ProfiledPIDController(
-            AutoConstants.kPThetaController, 0, 0, AutoConstants.kThetaControllerConstraints);
-            thetaController.enableContinuousInput(-Math.PI, Math.PI);
-
-        //
-        Command autoCommand1 = leaveAutoCommand(config, thetaController);
-        Command autoCommand2 = middleAutoCommand(config, thetaController);
-        Command autoCommand3 = rightAutoCommand(config, thetaController, false);
-        Command autoCommand4 = leftAutoCommand(config, thetaController);
-        
         // Send selected auto command to Robot.java
-        return autoCommand1;
+        return m_chooser.getSelected();
     }
     /* 
      *  =========================================================
