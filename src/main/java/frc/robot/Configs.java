@@ -137,4 +137,16 @@ public final class Configs {
       intakeConfig.inverted(true).idleMode(IdleMode.kBrake).smartCurrentLimit(40);
     }
   }
+
+  public static final class HangSubsystem {
+    public static final SparkMaxConfig hangConfig = new SparkMaxConfig();
+
+    static {
+
+      // Configure basic settings of the hang motor
+      hangConfig
+        .inverted(false)
+        .idleMode(IdleMode.kBrake);
+    }
+  }
 }
