@@ -31,7 +31,7 @@ import frc.robot.subsystems.AlgaeSubsystem;
 import frc.robot.subsystems.CoralSubsystem;
 import frc.robot.subsystems.CoralSubsystem.Setpoint;
 import frc.robot.subsystems.DriveSubsystem;
-import frc.robot.subsystems.HangSubsystem;
+//import frc.robot.subsystems.HangSubsystem;
 import java.util.List;
 import java.util.Optional;
 
@@ -46,7 +46,7 @@ public class RobotContainer {
     private final DriveSubsystem m_robotDrive = new DriveSubsystem();
     private final CoralSubsystem m_coralSubSystem = new CoralSubsystem();
     private final AlgaeSubsystem m_algaeSubsystem = new AlgaeSubsystem();
-    private final HangSubsystem m_hangSubsystem = new HangSubsystem();
+    //private final HangSubsystem m_hangSubsystem = new HangSubsystem();
 
     // The driver's controller
     CommandXboxController m_driverController = new CommandXboxController(OIConstants.kDriverControllerPort);
@@ -78,7 +78,7 @@ public class RobotContainer {
         m_algaeSubsystem.setDefaultCommand(m_algaeSubsystem.idleCommand());
 
         // Set the hang arm to hold when not running
-        m_hangSubsystem.setDefaultCommand(m_hangSubsystem.idleCommand());
+        //m_hangSubsystem.setDefaultCommand(m_hangSubsystem.idleCommand());
         
         // Create config for trajectory
         TrajectoryConfig config = new TrajectoryConfig(
@@ -131,9 +131,9 @@ public class RobotContainer {
             .whileTrue(m_algaeSubsystem.reverseIntakeCommand());
 
         // Left Bumper -> Run hang arm, set to hold when idle
-        m_driverController.leftBumper().whileTrue(m_hangSubsystem.runHangCommand());
+        //m_driverController.leftBumper().whileTrue(m_hangSubsystem.runHangCommand());
         // Right Bumper -> Run hang arm in reverse, set to release when idle
-        m_driverController.rightBumper().whileTrue(m_hangSubsystem.reverseHangCommand());
+        //m_driverController.rightBumper().whileTrue(m_hangSubsystem.reverseHangCommand());
 
 
 

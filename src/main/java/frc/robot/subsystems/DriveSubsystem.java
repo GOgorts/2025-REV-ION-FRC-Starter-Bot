@@ -75,23 +75,23 @@ public class DriveSubsystem extends SubsystemBase {
           });
 
     // AdvantageScope NetworkTables code (hopefully lol)
-    SwerveModuleState[] states = {m_frontLeft.getState(), m_frontRight.getState(), 
-        m_rearLeft.getState(), m_rearRight.getState()};
+    // SwerveModuleState[] states = {m_frontLeft.getState(), m_frontRight.getState(), 
+    //     m_rearLeft.getState(), m_rearRight.getState()};
     
-    ChassisSpeeds chassisSpeeds = DriveConstants.kDriveKinematics.toChassisSpeeds(states);
+    // ChassisSpeeds chassisSpeeds = DriveConstants.kDriveKinematics.toChassisSpeeds(states);
 
-    StructArrayPublisher<SwerveModuleState> statePublisher = NetworkTableInstance.getDefault().
-        getStructArrayTopic("MyStates", SwerveModuleState.struct).publish();
+    // StructArrayPublisher<SwerveModuleState> statePublisher = NetworkTableInstance.getDefault().
+    //     getStructArrayTopic("MyStates", SwerveModuleState.struct).publish();
 
-    StructPublisher<ChassisSpeeds> chassisPublisher = NetworkTableInstance.getDefault().
-        getStructTopic("MyChassisSpeeds", ChassisSpeeds.struct).publish();
+    // StructPublisher<ChassisSpeeds> chassisPublisher = NetworkTableInstance.getDefault().
+    //     getStructTopic("MyChassisSpeeds", ChassisSpeeds.struct).publish();
 
-    StructPublisher<Pose2d> posePublisher = NetworkTableInstance.getDefault().
-        getStructTopic("MyPose", Pose2d.struct).publish();
+    // StructPublisher<Pose2d> posePublisher = NetworkTableInstance.getDefault().
+    //     getStructTopic("MyPose", Pose2d.struct).publish();
     
-    statePublisher.set(states);
-    chassisPublisher.set(chassisSpeeds);
-    posePublisher.set(getPose());
+    // statePublisher.set(states);
+    // chassisPublisher.set(chassisSpeeds);
+    // posePublisher.set(getPose());
 
     }
 
