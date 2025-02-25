@@ -35,6 +35,11 @@ public final class Constants {
     }
 
     public static final class ArmSetpoints {
+      /*
+       *  Feeds from front of robot
+       *  Scores from back of robot
+       *  Before turn on, coral arm must be facing back of robot
+       */
       public static final double kFeederStation = 33;
       public static final double kLevel1 = 0;
       public static final double kLevel2 = 2;
@@ -55,9 +60,19 @@ public final class Constants {
     public static final int kPivotMotorCanId = 12;
 
     public static final class ArmSetpoints {
-      public static final double kStow = 18.5;
-      public static final double kHold = 11.5;
-      public static final double kDown = 0;
+      /*
+       * Before turn on, arm must be pushed to lowest position
+       * 
+       */
+      // public static final double kStow = 18.5;
+      // public static final double kHold = 11.5;
+      // public static final double kDown = 0;
+      
+      // May need to change the above to:
+      public static final double kStow = -5;
+      public static final double kHold = -7;
+      //public static final double kDown = -18.5;
+      public static final double kDown = -20;
     }
 
     public static final class IntakeSetpoints {
@@ -68,7 +83,7 @@ public final class Constants {
   }
 
   public static final class HangSubsystemConstants {
-    public static final int kHangMotorCanId = 96;
+    // public static final int kHangMotorCanId = 13;
 
     public static final double kForward = 0.75;
     public static final double kReverse = -0.5;

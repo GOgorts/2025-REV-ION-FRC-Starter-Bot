@@ -142,13 +142,15 @@ public class RobotContainer {
         // Right Bumper -> Run coral tube intake in reverse
         m_operatorController.rightBumper().whileTrue(m_coralSubSystem.reverseIntakeCommand());
 
-        // B Button -> Elevator/Arm to human player position, set ball intake to stow when idle
-        m_operatorController.b().onTrue(m_coralSubSystem.setSetpointCommand(Setpoint.kFeederStation)
+        // A Button -> Elevator/Arm to human player position, set ball intake to stow when idle
+        m_operatorController.a().onTrue(m_coralSubSystem.setSetpointCommand(Setpoint.kFeederStation)
             .alongWith(m_algaeSubsystem.stowCommand()));
-        // A Button -> Elevator/Arm to level 2 position
-        m_operatorController.a().onTrue(m_coralSubSystem.setSetpointCommand(Setpoint.kLevel2));
-        // X Button -> Elevator/Arm to level 3 position
-        m_operatorController.x().onTrue(m_coralSubSystem.setSetpointCommand(Setpoint.kLevel3));
+        // B Button -> Elevator/Arm to level 2 position
+        m_operatorController.b().onTrue(m_coralSubSystem.setSetpointCommand(Setpoint.kLevel2));
+        // X Button -> Elevator/Arm to level 2 position
+        m_operatorController.x().onTrue(m_coralSubSystem.setSetpointCommand(Setpoint.kLevel2));
+        // Y Button -> Elevator/Arm to level 3 position
+        m_operatorController.y().onTrue(m_coralSubSystem.setSetpointCommand(Setpoint.kLevel3));
         // Y Button -> Elevator/Arm to level 4 position
         // m_operatorController.y().onTrue(m_coralSubSystem.setSetpointCommand(Setpoint.kLevel4));
 
@@ -178,8 +180,29 @@ public class RobotContainer {
    * @return the command to run in autonomous
    */
     public Command getAutonomousCommand() {
+
+        // Create config for trajectory
+        TrajectoryConfig config = new TrajectoryConfig(
+            AutoConstants.kMaxSpeedMetersPerSecond,
+            AutoConstants.kMaxAccelerationMetersPerSecondSquared)
+            // Add kinematics to ensure max speed is actually obeyed
+            .setKinematics(DriveConstants.kDriveKinematics);
+
+        // Create ProfiledPIDController for theta controller
+        var thetaController = new ProfiledPIDController(
+            AutoConstants.kPThetaController, 0, 0, AutoConstants.kThetaControllerConstraints);
+            thetaController.enableContinuousInput(-Math.PI, Math.PI);
+
+        // Reset odometry to the starting pose of the trajectory.
+        m_robotDrive.resetOdometry(new Pose2d(new Translation2d(0, 0), new Rotation2d(0)));
+
         // Send selected auto command to Robot.java
-        return m_chooser.getSelected();
+        //return m_chooser.getSelected();
+        // rightAutoCommand(config, thetaController, false);
+        // leftAutoCommand(config, thetaController);
+        // middleAutoCommand(config, thetaController);
+        // leaveAutoCommand(config, thetaController);
+        return leaveAutoCommand(config, thetaController);
     }
     /* 
      *  =========================================================

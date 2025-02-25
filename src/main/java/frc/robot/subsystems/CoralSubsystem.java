@@ -159,8 +159,7 @@ public class CoralSubsystem extends SubsystemBase {
    */
   private void moveToSetpoint() {
     armController.setReference(armCurrentTarget, ControlType.kMAXMotionPositionControl);
-    elevatorClosedLoopController.setReference(
-        elevatorCurrentTarget, ControlType.kMAXMotionPositionControl);
+    elevatorClosedLoopController.setReference(elevatorCurrentTarget, ControlType.kMAXMotionPositionControl);
   }
 
   /** Zero the elevator encoder when the limit switch is pressed. */
