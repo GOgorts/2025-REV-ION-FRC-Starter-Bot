@@ -139,14 +139,17 @@ public class RobotContainer {
 
         // Left Bumper -> Run coral tube intake
         m_operatorController.leftBumper().whileTrue(m_coralSubSystem.runIntakeCommand());
+        // Left Trigger -> Run coral tube intake slower
+        // m_operatorController.leftTrigger(OIConstants.kTriggerButtonThreshold)
+        // .whileTrue(m_coralSubSystem.runIntakeSlowCommand());
         // Right Bumper -> Run coral tube intake in reverse
         m_operatorController.rightBumper().whileTrue(m_coralSubSystem.reverseIntakeCommand());
 
         // A Button -> Elevator/Arm to human player position, set ball intake to stow when idle
         m_operatorController.a().onTrue(m_coralSubSystem.setSetpointCommand(Setpoint.kFeederStation)
             .alongWith(m_algaeSubsystem.stowCommand()));
-        // B Button -> Elevator/Arm to level 2 position
-        m_operatorController.b().onTrue(m_coralSubSystem.setSetpointCommand(Setpoint.kLevel2));
+        // B Button -> Elevator/Arm to level 1 position
+        m_operatorController.b().onTrue(m_coralSubSystem.setSetpointCommand(Setpoint.kLevel1));
         // X Button -> Elevator/Arm to level 2 position
         m_operatorController.x().onTrue(m_coralSubSystem.setSetpointCommand(Setpoint.kLevel2));
         // Y Button -> Elevator/Arm to level 3 position

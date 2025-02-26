@@ -27,6 +27,7 @@ import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.Configs;
 import frc.robot.Constants.AlgaeSubsystemConstants;
 import frc.robot.Constants.SimulationRobotConstants;
+import frc.robot.Constants.AlgaeSubsystemConstants.ArmSetpoints;
 
 public class AlgaeSubsystem extends SubsystemBase {
   // Initialize arm SPARK. We will use MAXMotion position control for the arm, so we also need to
@@ -44,6 +45,7 @@ public class AlgaeSubsystem extends SubsystemBase {
   // Member variables for subsystem state management
   private boolean stowWhenIdle = true;
   private boolean wasReset = false;
+  private double armCurrentTarget = AlgaeSubsystemConstants.ArmSetpoints.kStow;
 
   // Simulation setup and variables
   private DCMotor armMotorModel = DCMotor.getNeoVortex(1);
@@ -189,14 +191,33 @@ public class AlgaeSubsystem extends SubsystemBase {
   /** Set the arm motor position. This will use closed loop position control. */
   private void setIntakePosition(double position) {
     armController.setReference(position, ControlType.kPosition);
+    armCurrentTarget = position;
   }
 
   @Override
   public void periodic() {
     zeroOnUserButton();
 
+    String algaeTarget;
+    switch ((int) armCurrentTarget) {
+      case (int) ArmSetpoints.kStow:
+        algaeTarget = "Stowed";
+        break;
+      case (int) ArmSetpoints.kHold:
+        algaeTarget = "Hold";
+        break;
+      case (int) ArmSetpoints.kDown:
+        algaeTarget = "Down";
+        break;
+      case 0:
+        algaeTarget = "Start";
+      default:
+        algaeTarget = "Unknown";
+        break;
+    }
     // Display subsystem values
-    SmartDashboard.putNumber("Algae/Arm/Position", armEncoder.getPosition());
+    // SmartDashboard.putNumber("Algae/Arm/Position", armEncoder.getPosition());
+    SmartDashboard.putString("Algae/Arm/Target Position", algaeTarget);
     SmartDashboard.putNumber("Algae/Intake/Applied Output", intakeMotor.getAppliedOutput());
 
     // Update mechanism2d

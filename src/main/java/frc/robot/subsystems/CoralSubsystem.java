@@ -62,7 +62,7 @@ public class CoralSubsystem extends SubsystemBase {
   // Member variables for subsystem state management
   private boolean wasResetByButton = false;
   private boolean wasResetByLimit = false;
-  private double armCurrentTarget = ArmSetpoints.kFeederStation;
+  private double armCurrentTarget = 0;
   private double elevatorCurrentTarget = ElevatorSetpoints.kFeederStation;
 
   // Simulation setup and variables
@@ -243,6 +243,15 @@ public class CoralSubsystem extends SubsystemBase {
   }
 
   /**
+   * Command to run the intake motor for level 1 scoring. When the command is interrupted, e.g. the button is released,
+   * the motor will stop.
+   */
+  // public Command runIntakeSlowCommand() {
+  //   return this.startEnd(
+  //       () -> this.setIntakePower(IntakeSetpoints.kForwardLevel1), () -> this.setIntakePower(0.0));
+  // }
+
+  /**
    * Command to reverses the intake motor. When the command is interrupted, e.g. the button is
    * released, the motor will stop.
    */
@@ -293,10 +302,52 @@ public class CoralSubsystem extends SubsystemBase {
     zeroElevatorOnLimitSwitch();
     zeroOnUserButton();
 
-    // Display subsystem values
-    SmartDashboard.putNumber("Coral/Arm/Target Position", armCurrentTarget);
+    // Convert the coral arm's target position to a String
+    String coralArmTarget;
+    switch ((int) armCurrentTarget) {
+      case (int) CoralSubsystemConstants.ArmSetpoints.kFeederStation:
+        coralArmTarget = "Feeder Station";
+        break;
+      case (int) ArmSetpoints.kLevel1:
+        coralArmTarget = "Level 1";
+        break;
+      case (int) ArmSetpoints.kLevel2:
+        coralArmTarget = "Level 2/3";
+        break;
+      // case (int) ArmSetpoints.kLevel3:
+      //   coralArmTarget = "Level 3";
+      //   break;
+      default:
+        coralArmTarget = "Unknown";
+        break;
+    }
+
+    // Convert the elevator's target posiion to a String
+    String elevatorTarget;
+    switch ((int) elevatorCurrentTarget) {
+      case ElevatorSetpoints.kFeederStation:
+        elevatorTarget = "Feeder Station / Level 1 / Level 2";
+        break;
+      // case ElevatorSetpoints.kLevel1:
+      //   elevatorTarget = "Level 1";
+      //   break;
+      // case ElevatorSetpoints.kLevel2:
+      //   elevatorTarget = "Level 2";
+      //   break;
+      case ElevatorSetpoints.kLevel3:
+        elevatorTarget = "Level 3";
+        break;
+      default:
+        elevatorTarget = "Unknown";
+        break;
+    }
+
+    // Display system values
+    // SmartDashboard.putNumber("Coral/Arm/Target Position", armCurrentTarget);
+    SmartDashboard.putString("Coral/Arm/Target Position", coralArmTarget);
     SmartDashboard.putNumber("Coral/Arm/Actual Position", armEncoder.getPosition());
-    SmartDashboard.putNumber("Coral/Elevator/Target Position", elevatorCurrentTarget);
+    // SmartDashboard.putNumber("Coral/Elevator/Target Position", elevatorCurrentTarget);
+    SmartDashboard.putString("Coral/Elevator/Target Position", elevatorTarget);
     SmartDashboard.putNumber("Coral/Elevator/Actual Position", elevatorEncoder.getPosition());
     SmartDashboard.putNumber("Coral/Intake/Applied Output", intakeMotor.getAppliedOutput());
 
