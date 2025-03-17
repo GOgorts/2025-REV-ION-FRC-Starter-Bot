@@ -52,7 +52,7 @@ public class RobotContainer {
     CommandXboxController m_driverController = new CommandXboxController(OIConstants.kDriverControllerPort);
     CommandXboxController m_operatorController = new CommandXboxController(OIConstants.kOperatorControllerPort);
 
-    Optional<Alliance> alliance = DriverStation.getAlliance();
+    // Optional<Alliance> alliance = DriverStation.getAlliance();
 
     // A chooser for autonomous commands
     SendableChooser<Command> m_chooser = new SendableChooser<>();
@@ -100,6 +100,10 @@ public class RobotContainer {
         
         // Put the chooser on the dashboard
         SmartDashboard.putData(m_chooser);
+    }
+
+    public DriveSubsystem getDriveSubsystem() {
+        return m_robotDrive;
     }
 
     /* 
@@ -196,11 +200,11 @@ public class RobotContainer {
             AutoConstants.kPThetaController, 0, 0, AutoConstants.kThetaControllerConstraints);
             thetaController.enableContinuousInput(-Math.PI, Math.PI);
 
-        // Reset odometry to the starting pose of the trajectory.
-        m_robotDrive.resetOdometry(new Pose2d(new Translation2d(0, 0), new Rotation2d(0)));
+        // // Reset odometry to the starting pose of the trajectory.
+        // m_robotDrive.resetOdometry(new Pose2d(new Translation2d(0, 0), new Rotation2d(0)));
 
         // Send selected auto command to Robot.java
-        //return m_chooser.getSelected();
+        // return m_chooser.getSelected();
         // rightAutoCommand(config, thetaController, false);
         // leftAutoCommand(config, thetaController);
         // middleAutoCommand(config, thetaController);
@@ -245,7 +249,7 @@ public class RobotContainer {
             // Interior Waypoint
             List.of(new Translation2d(1, 0)),
             // End 2 meters straight ahead of where we started, facing forward
-            new Pose2d(2, 0, new Rotation2d(0)),
+            new Pose2d(3, 0, new Rotation2d(0)),
             config);
 
         SwerveControllerCommand forwardCommand = new SwerveControllerCommand(
@@ -260,7 +264,31 @@ public class RobotContainer {
             m_robotDrive::setModuleStates,
             m_robotDrive);
 
-        return forwardCommand.andThen(() -> m_robotDrive.drive(0, 0, 0, false));
+        // // Face the other way forward command
+        // Trajectory turnAroundTrajectory = TrajectoryGenerator.generateTrajectory(
+        //     // Start at the origin facing the X direction
+        //     new Pose2d(0, 0, new Rotation2d(0)),
+        //     // Interior Waypoint
+        //     List.of(new Translation2d(0, 0)),
+        //     // End 2 meters straight ahead of where we started, facing forward
+        //     new Pose2d(0, 0, new Rotation2d(Math.PI)),
+        //     config);
+
+        // SwerveControllerCommand turnAroundCommand = new SwerveControllerCommand(
+        //     turnAroundTrajectory,
+        //     m_robotDrive::getPose, // Functional interface to feed supplier
+        //     DriveConstants.kDriveKinematics,
+
+        //     // Position controllers
+        //     new PIDController(AutoConstants.kPXController, 0, 0),
+        //     new PIDController(AutoConstants.kPYController, 0, 0),
+        //     thetaController,
+        //     m_robotDrive::setModuleStates,
+        //     m_robotDrive);
+        // Reset odometry to the starting pose of the trajectory.
+        m_robotDrive.resetOdometry(forwardTrajectory.getInitialPose());
+
+        return forwardCommand.andThen(() -> m_robotDrive.drive(0,0,0, false));
     }
     
     // Auto Routine for middle of field
@@ -271,9 +299,9 @@ public class RobotContainer {
             // Start at the origin facing the +X direction
             new Pose2d(0, 0, new Rotation2d(0)),
             // Interior Waypoint
-            List.of(new Translation2d(1, 0)),
+            List.of(new Translation2d(-1, 0)),
             // End 2.15 meters straight ahead of where we started, facing forward
-            new Pose2d(2.15, 0, new Rotation2d(0)),
+            new Pose2d(-Units.inchesToMeters(86), 0, new Rotation2d(0)),
             config);
 
         SwerveControllerCommand forwardCommand = new SwerveControllerCommand(

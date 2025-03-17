@@ -28,10 +28,11 @@ public final class Constants {
       public static final int kFeederStation = 0;
       public static final int kLevel1 = 0;
       public static final int kLevel2 = 0;
-      public static final int kLevel3 = 100;
+      // public static final int kLevel3 = 100;
+      public static final int kLevel3 = 90;
       public static final int kLevel4 = 150;
-      public static final double kForward = 0.5;
-      public static final double kReverse = -0.5;
+      public static final double kForward = 0.9;
+      public static final double kReverse = -0.9;
     }
 
     public static final class ArmSetpoints {
@@ -41,7 +42,7 @@ public final class Constants {
        *  Before turn on, coral arm must be facing back of robot
        */
       public static final double kFeederStation = 33;
-      public static final double kLevel1 = 0;
+      public static final double kLevel1 = 0.5;
       public static final double kLevel2 = 2;
       public static final double kLevel3 = 2;
       public static final double kLevel4 = 19;
@@ -117,15 +118,15 @@ public final class Constants {
     public static final double kBackRightChassisAngularOffset = Math.PI / 2;
 
     // SPARK MAX CAN IDs
-    public static final int kFrontLeftDrivingCanId = 7;
-    public static final int kRearLeftDrivingCanId = 3;
-    public static final int kFrontRightDrivingCanId = 5;
-    public static final int kRearRightDrivingCanId = 1;
+    public static final int kFrontLeftDrivingCanId = 1;
+    public static final int kRearLeftDrivingCanId = 5;
+    public static final int kFrontRightDrivingCanId = 3;
+    public static final int kRearRightDrivingCanId = 7;
 
-    public static final int kFrontLeftTurningCanId = 8;
-    public static final int kRearLeftTurningCanId = 4;
-    public static final int kFrontRightTurningCanId = 6;
-    public static final int kRearRightTurningCanId = 2;
+    public static final int kFrontLeftTurningCanId = 2;
+    public static final int kRearLeftTurningCanId = 6;
+    public static final int kFrontRightTurningCanId = 4;
+    public static final int kRearRightTurningCanId = 8;
 
     public static final boolean kGyroReversed = false;
   }
@@ -156,8 +157,8 @@ public final class Constants {
   }
 
   public static final class AutoConstants {
-    public static final double kMaxSpeedMetersPerSecond = 1;
-    public static final double kMaxAccelerationMetersPerSecondSquared = 1;
+    public static final double kMaxSpeedMetersPerSecond = 3;
+    public static final double kMaxAccelerationMetersPerSecondSquared = 3;
     public static final double kMaxAngularSpeedRadiansPerSecond = Math.PI;
     public static final double kMaxAngularSpeedRadiansPerSecondSquared = Math.PI;
 

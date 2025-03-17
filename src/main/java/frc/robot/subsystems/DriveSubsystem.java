@@ -15,6 +15,7 @@ import edu.wpi.first.math.kinematics.SwerveModuleState;
 import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.networktables.StructArrayPublisher;
 import edu.wpi.first.networktables.StructPublisher;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.Constants.DriveConstants;
@@ -61,7 +62,9 @@ public class DriveSubsystem extends SubsystemBase {
           });
 
   /** Creates a new DriveSubsystem. */
-  public DriveSubsystem() {}
+  public DriveSubsystem() {
+    // m_gyro.setAngleAdjustment(-90);
+  }
 
   @Override
   public void periodic() {
@@ -74,6 +77,7 @@ public class DriveSubsystem extends SubsystemBase {
           m_rearRight.getPosition()
           });
 
+    SmartDashboard.putString("Gyro Angle", getPose().toString());
     // AdvantageScope NetworkTables code (hopefully lol)
     // SwerveModuleState[] states = {m_frontLeft.getState(), m_frontRight.getState(), 
     //     m_rearLeft.getState(), m_rearRight.getState()};
