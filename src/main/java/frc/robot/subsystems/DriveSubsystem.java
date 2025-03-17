@@ -4,20 +4,26 @@
 
 package frc.robot.subsystems;
 
+import com.pathplanner.lib.auto.AutoBuilder;
+import com.pathplanner.lib.config.PIDConstants;
+import com.pathplanner.lib.config.RobotConfig;
+import com.pathplanner.lib.controllers.PPHolonomicDriveController;
+import com.pathplanner.lib.util.DriveFeedforwards;
+import com.pathplanner.lib.util.swerve.SwerveSetpoint;
+import com.pathplanner.lib.util.swerve.SwerveSetpointGenerator;
 import com.studica.frc.AHRS;
+
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
+import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.math.kinematics.SwerveDriveKinematics;
 import edu.wpi.first.math.kinematics.SwerveDriveOdometry;
 import edu.wpi.first.math.kinematics.SwerveModulePosition;
 import edu.wpi.first.math.kinematics.SwerveModuleState;
-import edu.wpi.first.networktables.NetworkTableInstance;
-import edu.wpi.first.networktables.StructArrayPublisher;
-import edu.wpi.first.networktables.StructPublisher;
-import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import frc.robot.Constants.AutoConstants;
 import frc.robot.Constants.DriveConstants;
 
 public class DriveSubsystem extends SubsystemBase {
@@ -50,20 +56,68 @@ public class DriveSubsystem extends SubsystemBase {
   private final AHRS m_gyro = new AHRS(AHRS.NavXComType.kMXP_SPI);
 
   // Odometry class for tracking robot pose
-  SwerveDriveOdometry m_odometry =
-      new SwerveDriveOdometry(
-          DriveConstants.kDriveKinematics,
-          Rotation2d.fromDegrees(-1 * m_gyro.getAngle()),
-          new SwerveModulePosition[] {
-            m_frontLeft.getPosition(),
-            m_frontRight.getPosition(),
-            m_rearLeft.getPosition(),
-            m_rearRight.getPosition()
-          });
+  SwerveDriveOdometry m_odometry = new SwerveDriveOdometry(DriveConstants.kDriveKinematics,
+      Rotation2d.fromDegrees(-1 * m_gyro.getAngle()),
+      new SwerveModulePosition[] {
+          m_frontLeft.getPosition(),
+          m_frontRight.getPosition(),
+          m_rearLeft.getPosition(),
+          m_rearRight.getPosition()});
+
+  // Setpoint generator for PathPlanner
+  private final SwerveSetpointGenerator setpointGenerator;
+  private SwerveSetpoint previousSetpoint;
 
   /** Creates a new DriveSubsystem. */
   public DriveSubsystem() {
-    // m_gyro.setAngleAdjustment(-90);
+
+    // Get the robot configuration from PathPlanner's GUI settings
+    RobotConfig robotConfig = null;
+    try {
+      robotConfig = RobotConfig.fromGUISettings();
+    } catch (Exception e) {
+      e.printStackTrace();
+    }
+
+    // Reset the gyro on a seperate thread after waiting a second for it to calibrate
+    new Thread(() -> {
+      try {
+        Thread.sleep(1000);
+        m_gyro.reset();
+      } catch (Exception e) {}
+    }).start();
+    
+    /* 
+     *    Auto Builder & Path Planner Configuration
+     */
+    AutoBuilder.configure(this::getPose, this::resetOdometry, this::getRobotRelativeSpeeds,
+      (speeds, feedforwards) -> drive(speeds), 
+      new PPHolonomicDriveController(
+      new PIDConstants(AutoConstants.kPXController, 0, 0), 
+      new PIDConstants(AutoConstants.kPThetaController, 0, 0)), 
+      robotConfig,  () -> {
+        // Boolean supplier that controls when the path will be mirrored for the red alliance
+        // This will flip the path being followed to the red side of the field.
+        // THE ORIGIN WILL REMAIN ON THE BLUE SIDE
+
+        var alliance = DriverStation.getAlliance();
+        if (alliance.isPresent()) {
+           return alliance.get() == DriverStation.Alliance.Red;
+        }
+          return false;
+      }, 
+      this);
+
+    // Set up for being able to drive using robot-relative ChassisSpeeds
+    setpointGenerator = new SwerveSetpointGenerator(
+      robotConfig, // The robot configuration. This is the same config used for generating trajectories and running path following commands.
+      DriveConstants.kMaxAngularSpeed // The max rotation velocity of a swerve module in radians per second.
+      );
+
+    // Initialize the previous setpoint to the robot's current speeds & module states
+    ChassisSpeeds currentSpeeds = getRobotRelativeSpeeds(); // Method to get current robot-relative chassis speeds
+    SwerveModuleState[] currentStates = getCurrentModuleStates(); // Method to get the current swerve module states
+    previousSetpoint = new SwerveSetpoint(currentSpeeds, currentStates, DriveFeedforwards.zeros(robotConfig.numModules));
   }
 
   @Override
@@ -74,29 +128,7 @@ public class DriveSubsystem extends SubsystemBase {
           m_frontLeft.getPosition(),
           m_frontRight.getPosition(),
           m_rearLeft.getPosition(),
-          m_rearRight.getPosition()
-          });
-
-    SmartDashboard.putString("Gyro Angle", getPose().toString());
-    // AdvantageScope NetworkTables code (hopefully lol)
-    // SwerveModuleState[] states = {m_frontLeft.getState(), m_frontRight.getState(), 
-    //     m_rearLeft.getState(), m_rearRight.getState()};
-    
-    // ChassisSpeeds chassisSpeeds = DriveConstants.kDriveKinematics.toChassisSpeeds(states);
-
-    // StructArrayPublisher<SwerveModuleState> statePublisher = NetworkTableInstance.getDefault().
-    //     getStructArrayTopic("MyStates", SwerveModuleState.struct).publish();
-
-    // StructPublisher<ChassisSpeeds> chassisPublisher = NetworkTableInstance.getDefault().
-    //     getStructTopic("MyChassisSpeeds", ChassisSpeeds.struct).publish();
-
-    // StructPublisher<Pose2d> posePublisher = NetworkTableInstance.getDefault().
-    //     getStructTopic("MyPose", Pose2d.struct).publish();
-    
-    // statePublisher.set(states);
-    // chassisPublisher.set(chassisSpeeds);
-    // posePublisher.set(getPose());
-
+          m_rearRight.getPosition()});
     }
 
   /**
@@ -106,6 +138,19 @@ public class DriveSubsystem extends SubsystemBase {
    */
   public Pose2d getPose() {
     return m_odometry.getPoseMeters();
+  }
+
+  /**
+   * Returns the current robot-relative ChassisSpeeds
+   *
+   * @return The Chassis speeds.
+   */
+  public ChassisSpeeds getRobotRelativeSpeeds() {
+    return DriveConstants.kDriveKinematics.toChassisSpeeds(
+      m_frontLeft.getState(),
+      m_frontRight.getState(),
+      m_rearLeft.getState(),
+      m_rearRight.getState());
   }
 
   /**
@@ -154,6 +199,23 @@ public class DriveSubsystem extends SubsystemBase {
     m_frontRight.setDesiredState(swerveModuleStates[1]);
     m_rearLeft.setDesiredState(swerveModuleStates[2]);
     m_rearRight.setDesiredState(swerveModuleStates[3]);
+  }
+
+  /**
+    * This method will take in desired robot-relative chassis speeds,
+    * generate a swerve setpoint, then set the target state for each module
+    *
+    * @param speeds The desired robot-relative speeds
+    */
+  public void drive(ChassisSpeeds speeds) {
+    // Note: it is important to not discretize speeds before or after
+    // using the setpoint generator, as it will discretize them for you
+    previousSetpoint = setpointGenerator.generateSetpoint(
+      previousSetpoint, // The previous setpoint
+      speeds, // The desired target speeds
+      0.02 // The loop time of the robot code, in seconds
+    );
+    setModuleStates(previousSetpoint.moduleStates()); // Method that will drive the robot given target module states
   }
 
   /** Sets the wheels into an X formation to prevent movement. */
@@ -210,5 +272,19 @@ public class DriveSubsystem extends SubsystemBase {
    */
   public double getTurnRate() {
     return -1 * m_gyro.getRate() * (DriveConstants.kGyroReversed ? -1.0 : 1.0);
+  }
+
+  /**
+   * Returns the current Swerve Module States of the robot
+   *
+   * @return The Swerve Module States of the robot
+   */
+  public SwerveModuleState [] getCurrentModuleStates() {
+    SwerveModuleState [] states = new SwerveModuleState[4];
+    states[0] = m_frontLeft.getState();
+    states[1] = m_frontRight.getState();
+    states[2] = m_rearLeft.getState();
+    states[3] = m_rearRight.getState();
+    return states;
   }
 }
