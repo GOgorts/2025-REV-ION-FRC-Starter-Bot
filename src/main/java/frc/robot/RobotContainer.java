@@ -93,7 +93,7 @@ public class RobotContainer {
         // Register Named Commands for PathPlanner
         NamedCommands.registerCommand("ElevatorLevel2", m_coralSubSystem.setSetpointCommand(Setpoint.kLevel2));
         NamedCommands.registerCommand("ScoreCoral", m_coralSubSystem.reverseIntakeCommand().withTimeout(1));
-        NamedCommands.registerCommand("IntakeCoral", m_coralSubSystem.runIntakeCommand().withTimeout(1));
+        NamedCommands.registerCommand("IntakeCoral", m_coralSubSystem.reverseIntakeCommand().withTimeout(1));
         NamedCommands.registerCommand("ElevatorFeederStation", m_coralSubSystem.setSetpointCommand(Setpoint.kFeederStation));
 
         // Add commands to the autonomous command chooser
@@ -104,6 +104,20 @@ public class RobotContainer {
 
         // Build an auto chooser. This will use Commands.none() as the default option.
         m_chooser = AutoBuilder.buildAutoChooser();
+
+        // Create config for trajectory
+        TrajectoryConfig config = new TrajectoryConfig(
+            AutoConstants.kMaxSpeedMetersPerSecond,
+            AutoConstants.kMaxAccelerationMetersPerSecondSquared)
+            // Add kinematics to ensure max speed is actually obeyed
+            .setKinematics(DriveConstants.kDriveKinematics);
+
+        // Create ProfiledPIDController for theta controller
+        var thetaController = new ProfiledPIDController(
+            AutoConstants.kPThetaController, 0, 0, AutoConstants.kThetaControllerConstraints);
+            thetaController.enableContinuousInput(-Math.PI, Math.PI);
+
+        m_chooser.addOption("Taxi Out", leaveAutoCommand(config, thetaController));
         
         // Put the chooser on the dashboard
         SmartDashboard.putData("Auto Chooser", m_chooser);
@@ -156,7 +170,7 @@ public class RobotContainer {
         m_operatorController.a().onTrue(m_coralSubSystem.setSetpointCommand(Setpoint.kFeederStation)
             .alongWith(m_algaeSubsystem.stowCommand()));
         // B Button -> Elevator/Arm to level 1 position
-        m_operatorController.b().onTrue(m_coralSubSystem.setSetpointCommand(Setpoint.kLevel1));
+        //m_operatorController.b().onTrue(m_coralSubSystem.setSetpointCommand(Setpoint.kLevel1));
         // X Button -> Elevator/Arm to level 2 position
         m_operatorController.x().onTrue(m_coralSubSystem.setSetpointCommand(Setpoint.kLevel2));
         // Y Button -> Elevator/Arm to level 3 position
@@ -191,20 +205,8 @@ public class RobotContainer {
    */
     public Command getAutonomousCommand() {
 
-        // // Create config for trajectory
-        // TrajectoryConfig config = new TrajectoryConfig(
-        //     AutoConstants.kMaxSpeedMetersPerSecond,
-        //     AutoConstants.kMaxAccelerationMetersPerSecondSquared)
-        //     // Add kinematics to ensure max speed is actually obeyed
-        //     .setKinematics(DriveConstants.kDriveKinematics);
-
-        // // Create ProfiledPIDController for theta controller
-        // var thetaController = new ProfiledPIDController(
-        //     AutoConstants.kPThetaController, 0, 0, AutoConstants.kThetaControllerConstraints);
-        //     thetaController.enableContinuousInput(-Math.PI, Math.PI);
-
         // Reset odometry to the starting pose of the trajectory.
-        // m_robotDrive.resetOdometry(new Pose2d(new Translation2d(0, 0), new Rotation2d(0)));
+        m_robotDrive.resetOdometry(new Pose2d(new Translation2d(0, 0), new Rotation2d(0)));
 
         // Send selected auto command to Robot.java
         //return m_chooser.getSelected();
@@ -243,33 +245,36 @@ public class RobotContainer {
      *  =========================================================
      */
     
-    // // Auto Routine for soley leave points
-    // public Command leaveAutoCommand(TrajectoryConfig config, ProfiledPIDController thetaController) {
+    // Auto Routine for soley leave points
+    public Command leaveAutoCommand(TrajectoryConfig config, ProfiledPIDController thetaController) {
         
-    //     // Drive forward command
-    //     Trajectory forwardTrajectory = TrajectoryGenerator.generateTrajectory(
-    //         // Start at the origin facing the +X direction
-    //         new Pose2d(0, 0, new Rotation2d(0)),
-    //         // Interior Waypoint
-    //         List.of(new Translation2d(1, 0)),
-    //         // End 2 meters straight ahead of where we started, facing forward
-    //         new Pose2d(2, 0, new Rotation2d(0)),
-    //         config);
+        // Drive backward command
+        Trajectory backwardTrajectory = TrajectoryGenerator.generateTrajectory(
+            // Start at the origin facing the +X direction
+            new Pose2d(0, 0, new Rotation2d(0)),
+            // Interior Waypoint
+            List.of(new Translation2d(-1, 0)),
+            // End 2 meters straight behind of where we started, facing forward
+            new Pose2d(-2, 0, new Rotation2d(0)),
+            config);
 
-    //     SwerveControllerCommand forwardCommand = new SwerveControllerCommand(
-    //         forwardTrajectory,
-    //         m_robotDrive::getPose, // Functional interface to feed supplier
-    //         DriveConstants.kDriveKinematics,
+        SwerveControllerCommand forwardCommand = new SwerveControllerCommand(
+            backwardTrajectory,
+            m_robotDrive::getPose, // Functional interface to feed supplier
+            DriveConstants.kDriveKinematics,
 
-    //         // Position controllers
-    //         new PIDController(AutoConstants.kPXController, 0, 0),
-    //         new PIDController(AutoConstants.kPYController, 0, 0),
-    //         thetaController,
-    //         m_robotDrive::setModuleStates,
-    //         m_robotDrive);
+            // Position controllers
+            new PIDController(AutoConstants.kPXController, 0, 0),
+            new PIDController(AutoConstants.kPYController, 0, 0),
+            thetaController,
+            m_robotDrive::setModuleStates,
+            m_robotDrive);
 
-    //     return forwardCommand.andThen(() -> m_robotDrive.drive(0, 0, 0, false));
-    // }
+        // Reset odometry to the starting pose of the trajectory.
+        m_robotDrive.resetOdometry(backwardTrajectory.getInitialPose());
+
+        return forwardCommand.andThen(() -> m_robotDrive.drive(0, 0, 0, false));
+    }
     
     // // Auto Routine for middle of field
     // public Command middleAutoCommand(TrajectoryConfig config, ProfiledPIDController thetaController) {
