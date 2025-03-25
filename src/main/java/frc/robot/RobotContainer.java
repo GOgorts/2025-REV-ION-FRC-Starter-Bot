@@ -31,6 +31,9 @@ import frc.robot.subsystems.AlgaeSubsystem;
 import frc.robot.subsystems.CoralSubsystem;
 import frc.robot.subsystems.CoralSubsystem.Setpoint;
 import frc.robot.subsystems.DriveSubsystem;
+
+import static edu.wpi.first.units.Units.Rotation;
+
 //import frc.robot.subsystems.HangSubsystem;
 import java.util.List;
 import java.util.Optional;
@@ -92,7 +95,7 @@ public class RobotContainer {
 
         // Register Named Commands for PathPlanner
         NamedCommands.registerCommand("ElevatorLevel2", m_coralSubSystem.setSetpointCommand(Setpoint.kLevel2));
-        NamedCommands.registerCommand("ScoreCoral", m_coralSubSystem.reverseIntakeCommand().withTimeout(1));
+        NamedCommands.registerCommand("ScoreCoral", m_coralSubSystem.runIntakeCommand().withTimeout(1));
         NamedCommands.registerCommand("IntakeCoral", m_coralSubSystem.reverseIntakeCommand().withTimeout(1));
         NamedCommands.registerCommand("ElevatorFeederStation", m_coralSubSystem.setSetpointCommand(Setpoint.kFeederStation));
 
@@ -205,8 +208,20 @@ public class RobotContainer {
    */
     public Command getAutonomousCommand() {
 
+        // Create config for trajectory
+        TrajectoryConfig config = new TrajectoryConfig(
+            AutoConstants.kMaxSpeedMetersPerSecond,
+            AutoConstants.kMaxAccelerationMetersPerSecondSquared)
+            // Add kinematics to ensure max speed is actually obeyed
+            .setKinematics(DriveConstants.kDriveKinematics);
+
+        // Create ProfiledPIDController for theta controller
+        var thetaController = new ProfiledPIDController(
+            AutoConstants.kPThetaController, 0, 0, AutoConstants.kThetaControllerConstraints);
+            thetaController.enableContinuousInput(-Math.PI, Math.PI);
+
         // Reset odometry to the starting pose of the trajectory.
-        m_robotDrive.resetOdometry(new Pose2d(new Translation2d(0, 0), new Rotation2d(0)));
+        // m_robotDrive.resetOdometry(new Pose2d(new Translation2d(0, 0), new Rotation2d(0)));
 
         // Send selected auto command to Robot.java
         //return m_chooser.getSelected();
@@ -245,7 +260,14 @@ public class RobotContainer {
      *  =========================================================
      */
     
-    // Auto Routine for soley leave points
+    /* Auto Routine for soley leave points
+     * 
+     * Starting position: 
+     *  - Make sure the algae intake is facing TOWARDS YOU 
+     *  - RSL light should be facing AWAY from you
+     * 
+     * 
+    */
     public Command leaveAutoCommand(TrajectoryConfig config, ProfiledPIDController thetaController) {
         
         // Drive backward command
@@ -253,12 +275,12 @@ public class RobotContainer {
             // Start at the origin facing the +X direction
             new Pose2d(0, 0, new Rotation2d(0)),
             // Interior Waypoint
-            List.of(new Translation2d(-1, 0)),
+            List.of(new Translation2d(1, 0)),
             // End 2 meters straight behind of where we started, facing forward
-            new Pose2d(-2, 0, new Rotation2d(0)),
+            new Pose2d(2, 0, new Rotation2d(0)),
             config);
 
-        SwerveControllerCommand forwardCommand = new SwerveControllerCommand(
+        SwerveControllerCommand backwardCommand = new SwerveControllerCommand(
             backwardTrajectory,
             m_robotDrive::getPose, // Functional interface to feed supplier
             DriveConstants.kDriveKinematics,
@@ -273,7 +295,9 @@ public class RobotContainer {
         // Reset odometry to the starting pose of the trajectory.
         m_robotDrive.resetOdometry(backwardTrajectory.getInitialPose());
 
-        return forwardCommand.andThen(() -> m_robotDrive.drive(0, 0, 0, false));
+        Command correctGyroCommand = m_robotDrive.setAngleOffsetCommand(180);
+
+        return backwardCommand.andThen(correctGyroCommand.andThen(() -> m_robotDrive.drive(0, 0, 0, false)));
     }
     
     // // Auto Routine for middle of field

@@ -102,9 +102,11 @@ public class DriveSubsystem extends SubsystemBase {
 
         var alliance = DriverStation.getAlliance();
         if (alliance.isPresent()) {
-           return alliance.get() == DriverStation.Alliance.Red;
+          return alliance.get() == DriverStation.Alliance.Red;
+          // return false;
         }
           return false;
+          // return false;
       }, 
       this);
 
@@ -256,6 +258,11 @@ public class DriveSubsystem extends SubsystemBase {
     return this.runOnce(() -> m_gyro.reset());
   }
 
+  /** Sets the angle to offset the robot */
+  public Command setAngleOffsetCommand(double offset) {
+    return this.runOnce(() -> m_gyro.setAngleAdjustment(offset));
+  }
+  
   /**
    * Returns the heading of the robot.
    *

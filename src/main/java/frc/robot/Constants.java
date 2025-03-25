@@ -41,8 +41,8 @@ public final class Constants {
        *  Scores from back of robot
        *  Before turn on, coral arm must be facing back of robot
        */
-      // public static final double kFeederStation = 33;
-      public static final double kFeederStation = 32;
+      public static final double kFeederStation = 33;
+      // public static final double kFeederStation = 32;
       public static final double kLevel1 = 0.5;
       public static final double kLevel2 = 2;
       public static final double kLevel3 = 2;
